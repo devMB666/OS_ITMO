@@ -26,6 +26,8 @@ static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg){
 	struct inode* inode_o;
 	struct inode_new inode; 
 	
+	task = get_pid_task(find_get_pid(pid), PIDTYPE_PID);
+	
 	switch(cmd){
 		case WR_PID: //write pid number
 			if(copy_from_user(&pid, (int*)arg, sizeof(pid))) pr_err("DATA WRITE ERROR!\n");
@@ -33,18 +35,20 @@ static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg){
 			break;
 			
 		case RD_TASK_CPUTIME: //read values from task_cputime and inode
-			task = get_pid_task(find_get_pid(pid), PIDTYPE_PID); 
 			if(task != NULL){
 				cputime.utime = task->utime;
 				cputime.stime = task->stime;
+				printk("utime - %lld ms, stime - %lld ms\n", (cputime.utime)/1000000, cputime.stime/1000000);
+			}
+			else printk("Error! no avaliable tasks.");
+			break;
+			
+		case RD_INODE:
 				inode_o = file->f_inode;
 				inode.i_uid = i_uid_read(inode_o);
 				inode.i_gid = i_gid_read(inode_o);
-				printk("user - %lld , stime - %lld\n", cputime.utime, cputime.stime);
-				printk("uid - %u\n gid - %u\n",inode.i_uid, inode.i_gid);
-				break;
-			}
-			else printk("Error! no avaliable tasks.");
+				printk("uid - %u\ngid - %u\n",inode.i_uid, inode.i_gid);
+			break;
 	}
 	return 0;
 }
